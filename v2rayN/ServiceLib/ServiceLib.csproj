@@ -18,7 +18,7 @@
 		<PackageReference Include="CliWrap" />
 		<PackageReference Include="ZXing.Net.Bindings.SkiaSharp" />
 		<PackageReference Include="TaskScheduler" />
-		<PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
+		<PackageReference Include="Mono.Posix.NETStandard" />
 	</ItemGroup>
 
 	<ItemGroup>

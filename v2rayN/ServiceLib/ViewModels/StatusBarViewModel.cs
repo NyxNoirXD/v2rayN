@@ -107,8 +107,14 @@ public class StatusBarViewModel : MyReactiveObject
         BlSystemProxyPacVisible = Utils.IsWindows();
         BlIsNonWindows = Utils.IsNonWindows();
 
-        if (_config.TunModeItem.EnableTun && AllowEnableTun())
+        // Auto-enable TUN at startup if allowed
+        if (AllowEnableTun())
         {
+            if (!_config.TunModeItem.EnableTun)
+            {
+                _config.TunModeItem.EnableTun = true;
+                _ = ConfigHandler.SaveConfig(_config); // Save config asynchronously
+            }
             EnableTun = true;
         }
         else
@@ -486,13 +492,10 @@ public class StatusBarViewModel : MyReactiveObject
         {
             return Utils.IsAdministrator();
         }
-        else if (Utils.IsLinux())
+        else if (Utils.IsLinux() || Utils.IsOSX())
         {
-            return AppManager.Instance.LinuxSudoPwd.IsNotEmpty();
-        }
-        else if (Utils.IsOSX())
-        {
-            return AppManager.Instance.LinuxSudoPwd.IsNotEmpty();
+            // Check if running as root (sudo)
+            return Utils.IsRunningAsRoot();
         }
         return false;
     }

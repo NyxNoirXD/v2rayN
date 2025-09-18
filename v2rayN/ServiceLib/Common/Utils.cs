@@ -996,4 +996,25 @@ public class Utils
     }
 
     #endregion Platform
+
+    /// <summary>
+    /// Returns true if running as root (Linux/macOS), otherwise false.
+    /// </summary>
+    public static bool IsRunningAsRoot()
+    {
+        try
+        {
+            // On Unix-like systems, root has UID 0
+            if (IsLinux() || IsOSX())
+            {
+                return Environment.UserName == "root" || Mono.Unix.Native.Syscall.geteuid() == 0;
+            }
+        }
+        catch
+        {
+            // Fallback: if Mono.Unix is not available, just check username
+            return Environment.UserName == "root";
+        }
+        return false;
+    }
 }

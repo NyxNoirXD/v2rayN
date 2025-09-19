@@ -7,6 +7,8 @@ using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using Splat;
 
+using System.Diagnostics;
+
 namespace ServiceLib.ViewModels;
 
 public class StatusBarViewModel : MyReactiveObject
@@ -471,10 +473,25 @@ public class StatusBarViewModel : MyReactiveObject
                 bool isSudoProcess = false;
                 if (Utils.IsLinux() || Utils.IsOSX())
                 {
-                    var commandResult = await default_api.run_terminal_command(command: "id -u");
-                    if (commandResult.status == "succeeded" && commandResult.result.Trim() == "0")
+                    try
                     {
-                        isSudoProcess = true;
+                        using (var process = new Process())
+                        {
+                            process.StartInfo.FileName = "/bin/bash";
+                            process.StartInfo.Arguments = "-c \"id -u\"";
+                            process.StartInfo.UseShellExecute = false;
+                            process.StartInfo.RedirectStandardOutput = true;
+                            process.StartInfo.CreateNoWindow = true;
+                            process.Start();
+                            string result = process.StandardOutput.ReadToEnd();
+                            process.WaitForExit();
+
+                            isSudoProcess = result.Trim() == "0";
+                        }
+                    }
+                    catch
+                    {
+                        // Log the error if necessary
                     }
                 }
 
@@ -508,11 +525,28 @@ public class StatusBarViewModel : MyReactiveObject
         else if (Utils.IsLinux() || Utils.IsOSX())
         {
             // For Linux/OSX, check if running as root or if a sudo password is stored
-            // This is a synchronous call to run_terminal_command, which might block.
-            // Consider refactoring if this method is called frequently in a UI thread.
-            var commandResult = default_api.run_terminal_command(command: "id -u");
-            bool isSudoProcess = commandResult.status == "succeeded" && commandResult.result.Trim() == "0";
-            return isSudoProcess || AppManager.Instance.LinuxSudoPwd.IsNotEmpty();
+            try
+            {
+                using (var process = new Process())
+                {
+                    process.StartInfo.FileName = "/bin/bash";
+                    process.StartInfo.Arguments = "-c \"id -u\"";
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.CreateNoWindow = true;
+                    process.Start();
+                    string result = process.StandardOutput.ReadToEnd();
+                    process.WaitForExit();
+
+                    bool isSudoProcess = result.Trim() == "0";
+                    return isSudoProcess || AppManager.Instance.LinuxSudoPwd.IsNotEmpty();
+                }
+            }
+            catch
+            {
+                // If there's an error running the command, fall back to checking stored password
+                return AppManager.Instance.LinuxSudoPwd.IsNotEmpty();
+            }
         }
         return false;
     }

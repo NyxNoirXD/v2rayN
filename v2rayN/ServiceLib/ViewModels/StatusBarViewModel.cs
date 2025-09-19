@@ -107,14 +107,8 @@ public class StatusBarViewModel : MyReactiveObject
         BlSystemProxyPacVisible = Utils.IsWindows();
         BlIsNonWindows = Utils.IsNonWindows();
 
-        // Auto-enable TUN at startup if allowed
-        if (AllowEnableTun())
+        if (_config.TunModeItem.EnableTun && AllowEnableTun())
         {
-            if (!_config.TunModeItem.EnableTun)
-            {
-                _config.TunModeItem.EnableTun = true;
-                _ = ConfigHandler.SaveConfig(_config); // Save config asynchronously
-            }
             EnableTun = true;
         }
         else
@@ -472,13 +466,32 @@ public class StatusBarViewModel : MyReactiveObject
                 Locator.Current.GetService<MainWindowViewModel>()?.RebootAsAdmin();
                 return;
             }
-            else
+            else // Non-Windows
             {
-                bool? passwordResult = await _updateView?.Invoke(EViewAction.PasswordInput, null);
-                if (passwordResult == false)
+                bool isSudoProcess = false;
+                if (Utils.IsLinux() || Utils.IsOSX())
                 {
-                    _config.TunModeItem.EnableTun = false;
-                    return;
+                    var commandResult = await default_api.run_terminal_command(command: "id -u");
+                    if (commandResult.status == "succeeded" && commandResult.result.Trim() == "0")
+                    {
+                        isSudoProcess = true;
+                    }
+                }
+
+                if (isSudoProcess)
+                {
+                    // If running as sudo, directly enable TUN and skip password prompt
+                    // _config.TunModeItem.EnableTun is already set to true.
+                }
+                else
+                {
+                    // Not running as sudo, proceed with password prompt
+                    bool? passwordResult = await _updateView?.Invoke(EViewAction.PasswordInput, null);
+                    if (passwordResult == false)
+                    {
+                        _config.TunModeItem.EnableTun = false;
+                        return;
+                    }
                 }
             }
         }
@@ -494,8 +507,12 @@ public class StatusBarViewModel : MyReactiveObject
         }
         else if (Utils.IsLinux() || Utils.IsOSX())
         {
-            // Check if running as root (sudo)
-            return Utils.IsRunningAsRoot();
+            // For Linux/OSX, check if running as root or if a sudo password is stored
+            // This is a synchronous call to run_terminal_command, which might block.
+            // Consider refactoring if this method is called frequently in a UI thread.
+            var commandResult = default_api.run_terminal_command(command: "id -u");
+            bool isSudoProcess = commandResult.status == "succeeded" && commandResult.result.Trim() == "0";
+            return isSudoProcess || AppManager.Instance.LinuxSudoPwd.IsNotEmpty();
         }
         return false;
     }

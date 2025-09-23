@@ -13,6 +13,9 @@ namespace ServiceLib.ViewModels;
 
 public class StatusBarViewModel : MyReactiveObject
 {
+    private static readonly Lazy<StatusBarViewModel> _instance = new(() => new(null));
+    public static StatusBarViewModel Instance => _instance.Value;
+
     #region ObservableCollection
 
     public IObservableCollection<RoutingItem> RoutingItems { get; } = new ObservableCollectionExtended<RoutingItem>();

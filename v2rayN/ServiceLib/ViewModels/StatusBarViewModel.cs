@@ -5,7 +5,6 @@ using System.Text;
 using DynamicData.Binding;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
-using Splat;
 
 using System.Diagnostics;
 
@@ -151,17 +150,17 @@ public class StatusBarViewModel : MyReactiveObject
 
         NotifyLeftClickCmd = ReactiveCommand.CreateFromTask(async () =>
         {
-            Locator.Current.GetService<MainWindowViewModel>()?.ShowHideWindow(null);
+            AppEvents.ShowHideWindowRequested.OnNext(null);
             await Task.CompletedTask;
         });
         ShowWindowCmd = ReactiveCommand.CreateFromTask(async () =>
         {
-            Locator.Current.GetService<MainWindowViewModel>()?.ShowHideWindow(true);
+            AppEvents.ShowHideWindowRequested.OnNext(true);
             await Task.CompletedTask;
         });
         HideWindowCmd = ReactiveCommand.CreateFromTask(async () =>
         {
-            Locator.Current.GetService<MainWindowViewModel>()?.ShowHideWindow(false);
+            AppEvents.ShowHideWindowRequested.OnNext(false);
             await Task.CompletedTask;
         });
 
@@ -277,23 +276,20 @@ public class StatusBarViewModel : MyReactiveObject
 
     private async Task AddServerViaClipboard()
     {
-        var service = Locator.Current.GetService<MainWindowViewModel>();
-        if (service != null)
-            await service.AddServerViaClipboardAsync(null);
+        AppEvents.AddServerViaClipboardRequested.OnNext(Unit.Default);
+        await Task.Delay(1000);
     }
 
     private async Task AddServerViaScan()
     {
-        var service = Locator.Current.GetService<MainWindowViewModel>();
-        if (service != null)
-            await service.AddServerViaScanAsync();
+        AppEvents.AddServerViaScanRequested.OnNext(Unit.Default);
+        await Task.Delay(1000);
     }
 
     private async Task UpdateSubscriptionProcess(bool blProxy)
     {
-        var service = Locator.Current.GetService<MainWindowViewModel>();
-        if (service != null)
-            await service.UpdateSubscriptionProcess("", blProxy);
+        AppEvents.SubscriptionsUpdateRequested.OnNext(blProxy);
+        await Task.Delay(1000);
     }
 
     private async Task RefreshServersBiz()
@@ -455,7 +451,7 @@ public class StatusBarViewModel : MyReactiveObject
         if (await ConfigHandler.SetDefaultRouting(_config, item) == 0)
         {
             NoticeManager.Instance.SendMessageEx(ResUI.TipChangeRouting);
-            Locator.Current.GetService<MainWindowViewModel>()?.Reload();
+            AppEvents.ReloadRequested.OnNext(Unit.Default);
             _updateView?.Invoke(EViewAction.DispatcherRefreshIcon, null);
         }
     }
@@ -488,7 +484,7 @@ public class StatusBarViewModel : MyReactiveObject
             if (Utils.IsWindows())
             {
                 _config.TunModeItem.EnableTun = false;
-                Locator.Current.GetService<MainWindowViewModel>()?.RebootAsAdmin();
+                await AppManager.Instance.RebootAsAdmin();
                 return;
             }
             else // Non-Windows
@@ -536,7 +532,7 @@ public class StatusBarViewModel : MyReactiveObject
             }
         }
         await ConfigHandler.SaveConfig(_config);
-        Locator.Current.GetService<MainWindowViewModel>()?.Reload();
+        AppEvents.ReloadRequested.OnNext(Unit.Default);
     }
 
     private bool AllowEnableTun()

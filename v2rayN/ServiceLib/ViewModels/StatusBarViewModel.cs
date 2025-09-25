@@ -150,17 +150,17 @@ public class StatusBarViewModel : MyReactiveObject
 
         NotifyLeftClickCmd = ReactiveCommand.CreateFromTask(async () =>
         {
-            AppEvents.ShowHideWindowRequested.OnNext(null);
+            AppEvents.ShowHideWindowRequested.Publish(null);
             await Task.CompletedTask;
         });
         ShowWindowCmd = ReactiveCommand.CreateFromTask(async () =>
         {
-            AppEvents.ShowHideWindowRequested.OnNext(true);
+            AppEvents.ShowHideWindowRequested.Publish(true);
             await Task.CompletedTask;
         });
         HideWindowCmd = ReactiveCommand.CreateFromTask(async () =>
         {
-            AppEvents.ShowHideWindowRequested.OnNext(false);
+            AppEvents.ShowHideWindowRequested.Publish(false);
             await Task.CompletedTask;
         });
 
@@ -276,19 +276,19 @@ public class StatusBarViewModel : MyReactiveObject
 
     private async Task AddServerViaClipboard()
     {
-        AppEvents.AddServerViaClipboardRequested.OnNext(Unit.Default);
+        AppEvents.AddServerViaClipboardRequested.Publish();
         await Task.Delay(1000);
     }
 
     private async Task AddServerViaScan()
     {
-        AppEvents.AddServerViaScanRequested.OnNext(Unit.Default);
+        AppEvents.AddServerViaScanRequested.Publish();
         await Task.Delay(1000);
     }
 
     private async Task UpdateSubscriptionProcess(bool blProxy)
     {
-        AppEvents.SubscriptionsUpdateRequested.OnNext(blProxy);
+        AppEvents.SubscriptionsUpdateRequested.Publish(blProxy);
         await Task.Delay(1000);
     }
 
@@ -350,7 +350,7 @@ public class StatusBarViewModel : MyReactiveObject
         {
             return;
         }
-        AppEvents.SetDefaultServerRequested.OnNext(SelectedServer.ID);
+        AppEvents.SetDefaultServerRequested.Publish(SelectedServer.ID);
     }
 
     public async Task TestServerAvailability()
@@ -451,7 +451,7 @@ public class StatusBarViewModel : MyReactiveObject
         if (await ConfigHandler.SetDefaultRouting(_config, item) == 0)
         {
             NoticeManager.Instance.SendMessageEx(ResUI.TipChangeRouting);
-            AppEvents.ReloadRequested.OnNext(Unit.Default);
+            AppEvents.ReloadRequested.Publish();
             _updateView?.Invoke(EViewAction.DispatcherRefreshIcon, null);
         }
     }
@@ -532,7 +532,7 @@ public class StatusBarViewModel : MyReactiveObject
             }
         }
         await ConfigHandler.SaveConfig(_config);
-        AppEvents.ReloadRequested.OnNext(Unit.Default);
+        AppEvents.ReloadRequested.Publish();
     }
 
     private bool AllowEnableTun()
